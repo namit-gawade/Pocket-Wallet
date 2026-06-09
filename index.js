@@ -1,9 +1,9 @@
-// 1. IMPORT FIREBASE (Now with Auth!)
+// 1. IMPORT FIREBASE DEPLOYMENT DEPENDENCIES
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getDatabase, ref, push, onValue, remove, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-// 2. CONNECT TO YOUR SPECIFIC PROJECT
+// 2. RUN ENVIRONMENT CONNECTIVITY OBJECT CONFIGURATION
 const firebaseConfig = {
     apiKey: "AIzaSyDM6LQot13YiVFdkGAEzOyz0yGBP7aasl4",
     authDomain: "expensetracker-7ae23.firebaseapp.com",
@@ -19,7 +19,7 @@ const database = getDatabase(app);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-// 3. HTML ELEMENTS
+// 3. CACHE INTERACTIVE DOM INTERFACE POINTERS
 const loginScreen = document.getElementById("login-screen");
 const appContainer = document.getElementById("app-container");
 const loginBtn = document.getElementById("google-login-btn");
@@ -35,79 +35,82 @@ const totalDisplay = document.getElementById("total-amount");
 const budgetInput = document.getElementById("budget-input");
 const progressFill = document.getElementById("progress-fill");
 
-// App State Variables
+// Global Application Core State Anchors
 let editingItemID = null;
-let currentUserID = null;     // Remembers who is logged in
-let expensesInDB = null;      // Will point to THEIR specific folder
-let budgetInDB = null;        // Will point to THEIR specific budget
+let currentUserID = null;     // Evaluates structural runtime isolation context
+let expensesInDB = null;      // Points to user partition data target paths
+let budgetInDB = null;        // Scopes user-allocated parameters
+let runningTotal = 0;
+let currentBudget = 0;
 
-// 4. AUTHENTICATION LOGIC
-// Login Button Click
+// 4. HANDSHAKE INFRASTRUCTURE AUTH EVENTS
 loginBtn.addEventListener("click", () => {
     signInWithPopup(auth, googleProvider).catch((error) => console.error("Login failed:", error));
 });
 
-// Logout Button Click
 logoutBtn.addEventListener("click", () => {
     signOut(auth).catch((error) => console.error("Logout failed:", error));
 });
 
-// The "Security Guard": Constantly watches to see if someone logs in or out
+// Structural Security Observability Broker Chain
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // --- USER IS LOGGED IN ---
-        currentUserID = user.uid; // Grab their unique, scrambled Google ID
+        currentUserID = user.uid;
 
-        // Hide login screen, show the app
         loginScreen.style.display = "none";
         appContainer.style.display = "block";
         welcomeText.textContent = `Welcome back, ${user.displayName.split(" ")[0]}!`;
 
-        // RE-ROUTE THE DATABASE: Point to this specific user's private vault!
+        // Direct isolated operational pointer scopes
         expensesInDB = ref(database, `users/${currentUserID}/personal_expenses`);
         budgetInDB = ref(database, `users/${currentUserID}/budget`);
 
-        // Now that we have their folder, start pulling their data
         loadUserData();
 
     } else {
-        // --- USER IS LOGGED OUT ---
         currentUserID = null;
         expensesInDB = null;
         budgetInDB = null;
+        runningTotal = 0;
+        currentBudget = 0;
 
-        // Show login screen, hide the app
         loginScreen.style.display = "flex";
         appContainer.style.display = "none";
 
-        // Clear old data from the screen so the next person doesn't see it
         expenseList.innerHTML = "";
         totalDisplay.textContent = "₹0.00";
         budgetInput.value = "";
         progressFill.style.width = "0%";
+        progressFill.style.backgroundColor = "#64748b";
     }
 });
 
-// 5. DATA LOGIC (Only runs when a user is logged in)
+// 5. ASYNC PERSISTENCE AND PARSING STRATEGIES
 function loadUserData() {
 
-    // Sync Budget Limit
+    // Capture mutation vectors on localized user mutation triggers
     budgetInput.addEventListener("change", function () {
-        set(budgetInDB, parseFloat(budgetInput.value) || 0);
+        const targetBudget = parseFloat(budgetInput.value) || 0;
+        set(budgetInDB, targetBudget);
     });
 
+    // Subscribed state broker listener matrices
     onValue(budgetInDB, function (snapshot) {
         if (snapshot.exists()) {
-            budgetInput.value = snapshot.val();
+            currentBudget = parseFloat(snapshot.val()) || 0;
+            budgetInput.value = currentBudget;
+        } else {
+            currentBudget = 0;
+            budgetInput.value = "";
         }
+        updateBudgetVisuals();
     });
 
-    // Render List & Progress Bar (Same exact logic as before!)
     onValue(expensesInDB, function (snapshot) {
         if (snapshot.exists()) {
             let itemsArray = Object.entries(snapshot.val());
             expenseList.innerHTML = "";
-            let runningTotal = 0;
+            runningTotal = 0;
 
             for (let i = itemsArray.length - 1; i >= 0; i--) {
                 let currentItem = itemsArray[i];
@@ -158,31 +161,39 @@ function loadUserData() {
             }
 
             totalDisplay.textContent = `₹${runningTotal.toFixed(2)}`;
-
-            let currentBudget = parseFloat(budgetInput.value) || 0;
-            if (currentBudget > 0) {
-                let percentage = (runningTotal / currentBudget) * 100;
-                progressFill.style.width = `${Math.min(percentage, 100)}%`;
-                if (percentage > 100) {
-                    progressFill.classList.add("over-budget");
-                } else {
-                    progressFill.classList.remove("over-budget");
-                }
-            } else {
-                progressFill.style.width = "0%";
-            }
+            updateBudgetVisuals();
 
         } else {
             expenseList.innerHTML = "<li style='justify-content: center; color: #94a3b8; font-size: 14px;'>No items logged yet! ✨</li>";
             totalDisplay.textContent = "₹0.00";
-            progressFill.style.width = "0%";
+            runningTotal = 0;
+            updateBudgetVisuals();
         }
     });
 }
 
-// 6. ADD OR UPDATE EXPENSE
+// 6. VOLUMETRIC UI COMPONENT FILL CALCULATOR
+function updateBudgetVisuals() {
+    if (currentBudget === 0) {
+        progressFill.style.width = "0%";
+        progressFill.style.backgroundColor = "#64748b";
+        return;
+    }
+
+    const percentage = (runningTotal / currentBudget) * 100;
+    progressFill.style.width = `${Math.min(percentage, 100)}%`;
+
+    if (percentage >= 100) {
+        progressFill.style.backgroundColor = "#EA4335"; // Breach (Red)
+    } else if (percentage >= 80) {
+        progressFill.style.backgroundColor = "#FBBC05"; // Margin Threshold Alert (Orange)
+    } else {
+        progressFill.style.backgroundColor = "#34A853"; // Normal Execution (Green)
+    }
+}
+
+// 7. TRANSACTION INPUT CONTROLLER MUTATIONS
 addButton.addEventListener("click", function () {
-    // Safety check: Don't allow saving if nobody is logged in
     if (!currentUserID) return;
 
     let expenseName = nameInput.value.trim();
