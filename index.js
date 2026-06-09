@@ -37,9 +37,9 @@ const progressFill = document.getElementById("progress-fill");
 
 // Global Application Core State Anchors
 let editingItemID = null;
-let currentUserID = null;     // Evaluates structural runtime isolation context
-let expensesInDB = null;      // Points to user partition data target paths
-let budgetInDB = null;        // Scopes user-allocated parameters
+let currentUserID = null;
+let expensesInDB = null;
+let budgetInDB = null;
 let runningTotal = 0;
 let currentBudget = 0;
 
@@ -61,7 +61,6 @@ onAuthStateChanged(auth, (user) => {
         appContainer.style.display = "block";
         welcomeText.textContent = `Welcome back, ${user.displayName.split(" ")[0]}!`;
 
-        // Direct isolated operational pointer scopes
         expensesInDB = ref(database, `users/${currentUserID}/personal_expenses`);
         budgetInDB = ref(database, `users/${currentUserID}/budget`);
 
@@ -81,14 +80,14 @@ onAuthStateChanged(auth, (user) => {
         totalDisplay.textContent = "₹0.00";
         budgetInput.value = "";
         progressFill.style.width = "0%";
-        progressFill.style.backgroundColor = "#64748b";
+        progressFill.style.setProperty('background-color', '#64748b', 'important');
     }
 });
 
 // 5. ASYNC PERSISTENCE AND PARSING STRATEGIES
 function loadUserData() {
 
-    // Capture mutation vectors on localized user mutation triggers
+    // Capture mutations on local input elements
     budgetInput.addEventListener("change", function () {
         const targetBudget = parseFloat(budgetInput.value) || 0;
         set(budgetInDB, targetBudget);
@@ -172,23 +171,30 @@ function loadUserData() {
     });
 }
 
-// 6. VOLUMETRIC UI COMPONENT FILL CALCULATOR
+// 6. VOLUMETRIC UI COMPONENT FILL CALCULATOR (Fixed Explicit Inline Properties)
 function updateBudgetVisuals() {
     if (currentBudget === 0) {
         progressFill.style.width = "0%";
-        progressFill.style.backgroundColor = "#64748b";
+        progressFill.style.setProperty('background-color', '#64748b', 'important');
         return;
     }
 
     const percentage = (runningTotal / currentBudget) * 100;
+
+    // Set width threshold safely
     progressFill.style.width = `${Math.min(percentage, 100)}%`;
 
+    // Ensure baseline class initialization stays constant
+    progressFill.removeAttribute("class");
+    progressFill.classList.add("progress-fill");
+
+    // Dynamic Style Override Injection
     if (percentage >= 100) {
-        progressFill.style.backgroundColor = "#EA4335"; // Breach (Red)
+        progressFill.style.setProperty('background-color', '#EA4335', 'important'); // Over Limit (Red)
     } else if (percentage >= 80) {
-        progressFill.style.backgroundColor = "#FBBC05"; // Margin Threshold Alert (Orange)
+        progressFill.style.setProperty('background-color', '#FBBC05', 'important'); // Warning Zone (Orange/Amber)
     } else {
-        progressFill.style.backgroundColor = "#34A853"; // Normal Execution (Green)
+        progressFill.style.setProperty('background-color', '#34A853', 'important'); // Under Limit Safe (Green)
     }
 }
 

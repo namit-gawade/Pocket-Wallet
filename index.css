@@ -162,10 +162,10 @@ body {
     overflow: hidden;
 }
 
+/* FIXED: Color properties removed from style sheets to avoid logic hierarchy blockades */
 .progress-fill {
     height: 100%;
     width: 0%;
-    background-color: #64748b;
     border-radius: 999px;
     transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
 }
